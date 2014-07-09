@@ -1,0 +1,67 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<!-- The HTML 4.01 Transitional DOCTYPE declaration-->
+<!-- above set at the top of the file will set     -->
+<!-- the browser's rendering engine into           -->
+<!-- "Quirks Mode". Replacing this declaration     -->
+<!-- with a "Standards Mode" doctype is supported, -->
+<!-- but may lead to some differences in layout.   -->
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport"
+	content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>OpenUI5 On Google App Engine</title>
+<script id="sap-ui-bootstrap"
+	src="https://openui5.hana.ondemand.com/resources/sap-ui-core.js"	
+	data-sap-ui-theme="sap_bluecrystal"
+	data-sap-ui-libs="sap.ui.commons, sap.m"></script>
+<script>
+	// let UI5 know that certain package (the one containing the Views/Controllers) is available locally (next to the HTML file)
+// 	sap.ui.localResources("sap.m.mvc");
+	
+	// define View and place it onto the HTML page
+// 	sap.ui.xmlview("appView", "sap.m.mvc.App").placeAt("content");
+	// all other initialization will be done by the App controller
+
+	// create a mobile App
+	// it initializes the HTML page for mobile use and provides animated page handling
+	var app = new sap.m.App("myApp", {
+		initialPage : "page1"
+	}); // page1 should be displayed first
+
+	// create the first page of your application
+	var page1 = new sap.m.Page("page1", {
+		title : "Initial Page",
+		content : new sap.m.Button({ // content is just one Button
+			text : "Go to Page 2",
+			tap : function() {
+				app.to("page2"); // when pressed, it triggers drilldown to page 2
+			}
+		})
+	});
+
+	// create the second page of your application
+	var page2 = new sap.m.Page("page2", {
+		title : "Page 2",
+		showNavButton : true, // page 2 should display a back button
+		navButtonPress : function() {
+			app.back(); // when pressed, the back button should navigate back up to page 1
+		},
+		content : new sap.m.Text({
+			text : "Hello Mobile World! yes its me!!"
+		}),
+		icon: "http://www.sap.com/global/ui/images/global/sap-logo.png"
+	});
+
+	app.addPage(page1).addPage(page2); // add both pages to the App
+
+	app.placeAt("content"); // place the App into the HTML document
+</script>
+
+</head>
+<body class="sapUiBody">
+	<div id="content"></div>
+</body>
+</html>

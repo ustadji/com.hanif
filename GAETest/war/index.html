@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<!-- The HTML 4.01 Transitional DOCTYPE declaration-->
+<!-- above set at the top of the file will set     -->
+<!-- the browser's rendering engine into           -->
+<!-- "Quirks Mode". Replacing this declaration     -->
+<!-- with a "Standards Mode" doctype is supported, -->
+<!-- but may lead to some differences in layout.   -->
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport"
+	content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>SAP UI5 On Google App Engine</title>
+<link rel="stylesheet" type="text/css" href="css/myStyles.css">
+<script id="sap-ui-bootstrap"
+	src="https://openui5.hana.ondemand.com/resources/sap-ui-core.js"	
+	data-sap-ui-theme="sap_bluecrystal"
+	data-sap-ui-libs="sap.ui.commons, sap.m"></script>
+<script>
+	// let UI5 know that certain package (the one containing the Views/Controllers) is available locally (next to the HTML file)
+	// all other initialization will be done by the App controller
+	sap.ui.localResources('');
+	sap.ui.jsview("appView", "App").placeAt("content");
+</script>
+
+</head>
+<body class="sapUiBody">
+<!-- 	<span style="font-family:'Segoe UI Symbol';color:black;font-size:40px;">&#x2660;</span> -->
+	<div id="content"></div>
+</body>
+</html>

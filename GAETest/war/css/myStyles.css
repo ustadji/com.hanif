@@ -1,0 +1,77 @@
+.myRedTextButton {
+	/* 	content : "&#x2660;
+	";
+	 */
+	color: blue !important;
+	font-family: Segoe UI Symbol !important;
+
+	/* font-size:80px !important;
+	 */
+}
+
+.cardDisplay {
+	font-size: 80px !important;
+}
+
+table.center {
+	margin-left: auto;
+	margin-right: auto;
+}
+
+.matrixAlignment {
+	align: center;
+}
+
+.displayCard {
+	/* 	border-style: dotted solid double; */
+	/* 	border: 2px dotted red; */
+	border: 1px solid;
+	border-radius: 10px !important;
+	font-size: 20px !important;
+	padding-left: 0px !important;
+	padding-right: 0px !important;
+	width: 25px;
+	height: 50px;
+	text-align: center;
+	/* 	background-image: url("../Black Heart 48x48.png"); */
+}
+
+.selectedCard {
+	/* 	border-style: dotted solid double; */
+	/* 	border: 2px dotted red; */
+	border: 5px solid;
+	border-radius: 20px !important;
+	font-size: 60px !important;
+	padding-left: 0px !important;
+	padding-right: 0px !important;
+	width: 76px;
+	height: 125px;
+	text-align: center;
+	padding-top: 3px;
+	padding-bottom: 10px;
+	/*Transition*/
+	-webkit-transition: -webkit-box-shadow 10.5s ease-out;;
+	-moz-transition: -moz-box-shadow 10.5s ease-out;
+	-o-transition: box-shadow 10.5s ease-out;
+}
+
+.selectedCard:HOVER {
+	-moz-box-shadow: 0px 0px 15px #0099ff;
+	-webkit-box-shadow: 0px 0px 15px #0099ff;
+	box-shadow: 0px 0px 15px #0099ff;
+}
+
+.selectedCell {
+	-moz-box-shadow: 0px 0px 15px #0099ff;
+	-webkit-box-shadow: 0px 0px 15px #0099ff;
+	box-shadow: 0px 0px 15px #0077ff;
+}
+
+.index {
+	font-size: 50%;
+	font-weight: bold;
+	text-align: center;
+	position: absolute;
+	left: 0.25em;
+	top: 0.25em;
+}

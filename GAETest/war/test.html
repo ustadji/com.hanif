@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html><head>
+    <meta http-equiv='X-UA-Compatible' content='IE=edge' />
+    <title>test</title>
+
+    <script id='sap-ui-bootstrap' type='text/javascript'
+    src='https://openui5.hana.ondemand.com/resources/sap-ui-core.js'
+        data-sap-ui-theme='sap_goldreflection'
+        data-sap-ui-libs='sap.ui.commons,sap.ui.ux3,sap.ui.table'></script>
+
+	<script type="text/javascript" src="http://mbostock.github.com/d3/d3.v2.js?2.8.1"></script>    
+    
+	<style>
+		.container{
+			height: 220px;
+			width: 220px;
+			position: relative;
+			-webkit-perspective: 500;
+		}
+		.block {
+			position: relative;
+			height: 200px;
+			width: 200px;
+			left: 0px;
+			top: 0px;
+			-webkit-transform-style: preserve-3d;
+			-webkit-transition: -webkit-transform 1.5s;
+		}
+		.rotated{
+			-webkit-transform: rotateX(180deg);
+		}
+		.side{
+			position: absolute;
+			-webkit-backface-visibility: hidden;
+			/*-webkit-box-shadow: 0 2px 5px #666;*/
+		}
+		.front{
+			height: 200px;
+			width: 200px;
+									padding: 0px;
+		}
+		.back{
+			height: 200px;
+			width: 200px;
+			padding: 0px;
+			-webkit-transform: rotateX(180deg);
+		}		
+	</style>    
+	
+	<script>
+
+	//chart items
+	sap.ui.core.Element.extend("my.ChartItem", { metadata : {
+		properties : {
+			"productid" : {type : "string", group : "Misc", defaultValue : null},
+			"amount" : {type : "string", group : "Misc", defaultValue : null}
+		}
+	}});	    
+    
+	//Pie chart
+    sap.ui.core.Control.extend("my.Pie", { 
+        // the control API:
+        metadata : {
+            properties : {           // setter and getter are created behind the scenes, incl. data binding and type validation
+            	"maxitems": {type:"string", defaultValue: 5},
+                "text" : "string",   // in simple cases, just define the type
+                "size" : {type: "sap.ui.core.CSSSize", defaultValue: "200px"} // you can also give a default value and more
+            },
+			aggregations : {
+				"items" : { type: "my.ChartItem", multiple : true, singularName : "item"}
+			},
+			defaultAggregation : "items",				
+        },
+		
+        // the part creating the HTML:
+        renderer : function(oRm, oControl) { // static function, so use the given "oControl" instance instead of "this" in the renderer function
+            oRm.write("<div"); 
+            oRm.writeControlData(oControl);  // writes the Control ID and enables event handling - important!
+            oRm.addClass("viz");        // add a CSS class for styles common to all control instances
+            oRm.writeClasses();              // this call writes the above class plus enables support for Square.addStyleClass(...)				
+            oRm.write(">");
+            oRm.write("</div>");
+        },
+		
+		onAfterRendering: function() {
+			var iSize = this.getSize();
+			var maxItems = this.getMaxitems();
+			var aItems = this.getItems();
+			var data = [];
+			//var iLen = (aItems.length > 10) ? 10 : aItems.length;
+			var iLen = (aItems.length<maxItems) ? aItems.length : maxItems;
+			for (var i=0;i<iLen;i++){
+				var oEntry = {};
+				for (var j in aItems[i].mProperties) {
+					oEntry[j]=aItems[i].mProperties[j];
+				}					
+				data.push(oEntry);
+			}
+			
+
+			var w = 200,                        //width
+			h = 200,                            //height
+			r = 100,                            //radius  #efaa00
+			color = d3.scale.category20c();     //builtin range of colors
+			color = function scale(x) {
+				var aCol = ["#0e304c","#efa900","#a6a6a6","#676767","#0560a8","#0e4076","#cc980d","#b68001","#fefefe"];
+				return aCol[x];
+			}
+			var vis = d3.select("#"+this.getId())
+				.append("svg:svg")              //create the SVG element inside the <body>
+				.data([data])                   //associate our data with the document
+				.attr("width", w)           //set the width and height of our visualization (these will be attributes of the <svg> tag
+				.attr("height", h)
+				.append("svg:g")                //make a group to hold our pie chart
+				.attr("transform", "translate(" + r + "," + r + ")")    //move the center of the pie chart from 0, 0 to radius, radius
+
+			var arc = d3.svg.arc()              //this will create <path> elements for us using arc data
+				.outerRadius(r);
+
+			var pie = d3.layout.pie()           //this will create arc data for us given a list of values
+				.value(function(d) { return d.amount; });    //we must tell it out to access the value of each element in our data array
+
+			var arcs = vis.selectAll("g.slice")     //this selects all <g> elements with class slice (there aren't any yet)
+				.data(pie)                          //associate the generated pie data (an array of arcs, each having startAngle, endAngle and value properties) 
+				.enter()                            //this will create <g> elements for every "extra" data element that should be associated with a selection. The result is creating a <g> for every object in the data array
+				.append("svg:g")                //create a group to hold each slice (we will have a <path> and a <text> element associated with each slice)
+				.attr("class", "slice");    //allow us to style things in the slices (like text)
+
+				arcs.append("svg:path")
+				.attr("fill", function(d, i) { return color(i); } ) 
+				//.attr("fill", function(d, i) { var c = d3.rgb("#efaa00"); for(var j=0;j<i;j++){c=c.darker()};return c /*color(i)*/; } ) //set the color for each slice to be chosen from the color function defined above
+				.attr("d", arc);                                    //this creates the actual SVG path using the associated data (pie) with the arc drawing function
+
+				arcs.append("svg:text")                                     //add a label to each slice
+				.attr("transform", function(d) {                    //set the label's origin to the center of the arc
+					//we have to make sure to set these before calling arc.centroid
+					d.innerRadius = 0;
+					d.outerRadius = r;
+					return "translate(" + arc.centroid(d) + ")";        //this gives us a pair of coordinates like [50, 50]
+				})
+				.attr("text-anchor", "middle")                          //center the text on it's origin
+				.text(function(d, i) { return data[i].productid; }).style("stroke", "#fff");        //get the label from our original data array
+
+		}			
+    });  
+    
+   
+	//bar chart
+	sap.ui.core.Control.extend("my.Bar", { 
+		// the control API:
+		metadata : {
+			properties : {           // setter and getter are created behind the scenes, incl. data binding and type validation
+				"maxitems": {type:"string", defaultValue: 5},
+				"text" : "string",   // in simple cases, just define the type
+				"size" : {type: "sap.ui.core.CSSSize", defaultValue: "200px"} // you can also give a default value and more
+			},
+			aggregations : {
+				"items" : { type: "my.ChartItem", multiple : true, singularName : "item"}
+			},
+			defaultAggregation : "items",				
+		},
+		
+		// the part creating the HTML:
+		renderer : function(oRm, oControl) { // static function, so use the given "oControl" instance instead of "this" in the renderer function
+			oRm.write("<div"); 
+			oRm.writeControlData(oControl);  // writes the Control ID and enables event handling - important!
+			oRm.addClass("viz");        // add a CSS class for styles common to all control instances
+			oRm.writeClasses();              // this call writes the above class plus enables support for Square.addStyleClass(...)				
+			oRm.write(">");
+			oRm.write("</div>");
+		},
+		
+		onAfterRendering: function() {
+			var iSize = this.getSize();
+			var maxItems = this.getMaxitems();
+			var aItems = this.getItems();
+			var data = [];
+			//for (var i=0;i<4;i++){
+			var iLen = (aItems.length<maxItems) ? aItems.length : maxItems;
+			for (var i=0;i<iLen;i++){
+				var oEntry = {};
+				for (var j in aItems[i].mProperties) {
+					oEntry[j]=aItems[i].mProperties[j];
+				}					
+				data.push(oEntry);
+			}
+			
+
+			//maximum of data you want to use
+			var data_max = 100,
+
+			//number of tickmarks to use
+			num_ticks = 5,
+
+			//margins
+			left_margin = 60,
+			right_margin = 60,
+			top_margin = 30,
+			bottom_margin = 0;
+
+
+			var w = 200,                        //width
+				h = 200,                        //height
+				color = function(id) { return '#efaa00' };
+
+			var x = d3.scale.linear()
+				.domain([0, data_max])
+				.range([0, w - ( left_margin + right_margin ) ]),
+				y = d3.scale.ordinal()
+				.domain(d3.range(data.length))
+				.rangeBands([bottom_margin, h - top_margin], .5);
+
+
+			var chart_top = h - y.rangeBand()/2 - top_margin;
+			var chart_bottom = bottom_margin + y.rangeBand()/2;
+			var chart_left = left_margin;
+			var chart_right = w - right_margin;
+
+			/*
+			 *  Setup the SVG element and position it
+			 */
+			var vis = d3.select("#"+this.getId())
+				.append("svg:svg")
+					.attr("width", w)
+					.attr("height", h)
+				.append("svg:g")
+					.attr("id", "barchart")
+					.attr("class", "barchart")
+
+
+			//Ticks
+			var rules = vis.selectAll("g.rule")
+				.data(x.ticks(num_ticks))
+			.enter()
+				.append("svg:g")
+				.attr("transform", function(d)
+						{
+						return "translate(" + (chart_left + x(d)) + ")";});
+			rules.append("svg:line")
+				.attr("class", "tick")
+				.attr("y1", chart_top)
+				.attr("y2", chart_top + 4)
+				.attr("stroke", "black");
+
+			rules.append("svg:text")
+				.attr("class", "tick_label")
+				.attr("text-anchor", "middle")
+				.attr("y", chart_top)
+				.text(function(d)
+				{
+				return d;
+				});
+			var bbox = vis.selectAll(".tick_label").node().getBBox();
+			vis.selectAll(".tick_label")
+			.attr("transform", function(d)
+					{
+					return "translate(0," + (bbox.height) + ")";
+					});
+
+			var bars = vis.selectAll("g.bar")
+				.data(data)
+			.enter()
+				.append("svg:g")
+					.attr("class", "bar")
+					.attr("transform", function(d, i) { 
+							return "translate(0, " + y(i) + ")"; });
+
+			bars.append("svg:rect")
+				.attr("x", right_margin)
+				.attr("width", function(d) {
+						return (x(d.amount));
+						})
+				.attr("height", y.rangeBand())
+				.attr("fill", color(0))
+				.attr("stroke", color(0));
+
+
+			//Labels
+			var labels = vis.selectAll("g.bar")
+				.append("svg:text")
+					.attr("class", "label")
+					.attr("x", 0)
+					.attr("text-anchor", "right")
+					.text(function(d) {
+							return d.productid;
+							});
+
+			var bbox = labels.node().getBBox();
+			vis.selectAll(".label")
+				.attr("transform", function(d) {
+						return "translate(0, " + (y.rangeBand()/2 + bbox.height/4) + ")";
+						});
+
+
+			labels = vis.selectAll("g.bar")
+				.append("svg:text")
+				.attr("class", "value")
+				.attr("x", function(d)
+						{
+						return x(d.amount) + right_margin + 10;
+						})
+				.attr("text-anchor", "left")
+				.text(function(d)
+				{
+				return "" + d.amount + "%";
+				});
+
+			bbox = labels.node().getBBox();
+			vis.selectAll(".value")
+				.attr("transform", function(d)
+				{
+					return "translate(0, " + (y.rangeBand()/2 + bbox.height/4) + ")";
+				});
+
+			//Axes
+			vis.append("svg:line")
+				.attr("class", "axes")
+				.attr("x1", chart_left)
+				.attr("x2", chart_left)
+				.attr("y1", chart_bottom)
+				.attr("y2", chart_top)
+				.attr("stroke", "black");
+			 vis.append("svg:line")
+				.attr("class", "axes")
+				.attr("x1", chart_left)
+				.attr("x2", chart_right)
+				.attr("y1", chart_top)
+				.attr("y2", chart_top)
+				.attr("stroke", "black");	
+		}			
+	});    
+    
+    
+	//flip container
+	sap.ui.core.Control.extend("my.FlipContainer", { // call the new Control type "Square" and let it inherit from sap.ui.core.Control
+		
+		// the control API:
+		metadata : {
+			aggregations: {
+				content: {singularName: "content"} // default type is "sap.ui.core.Control", multiple is "true"
+			}
+		},
+		
+		// the part creating the HTML:
+		renderer : function(oRm, oControl) { // static function, so use the given "oControl" instance instead of "this" in the renderer function
+		
+			oRm.write("<div"); 
+			oRm.writeControlData(oControl);  // writes the Control ID
+			oRm.addClass("container");
+			//oRm.addClass("container");
+			oRm.writeClasses();              // this call writes the above class plus enables support for Square.addStyleClass(...)
+			oRm.write(">");    	
+			
+			oRm.write("<div"); 
+			oRm.addClass("block");
+			//oRm.addClass("container");
+			oRm.writeClasses();              // this call writes the above class plus enables support for Square.addStyleClass(...)
+			oRm.write(">");
+			
+			var aChildren = oControl.getContent();
+			//for (var i = 0; i < aChildren.length; i++) { // loop over all child controls, render the colored box around them
+			oRm.write("<div");
+			oRm.addClass("front");
+			oRm.addClass("side");
+			oRm.writeClasses();              // this call writes the above class plus enables support for Square.addStyleClass(...)	
+			oRm.write(">");
+			
+			oRm.renderControl(aChildren[0]);   // render the child control (could even be a big control tree, but you don't need to care)
+			
+			oRm.write("</div>"); // end of the box around the respective child
+			
+			oRm.write("<div");
+			oRm.addClass("back");
+			oRm.addClass("side");
+			oRm.writeClasses();              // this call writes the above class plus enables support for Square.addStyleClass(...)	
+			oRm.write(">");
+			
+			oRm.renderControl(aChildren[1]);   // render the child control (could even be a big control tree, but you don't need to care)
+			
+			oRm.write("</div>"); // end of the box around the respective child					
+			//}
+			
+			oRm.write("</div>"); // end of the complete control
+			oRm.write("</div>"); // end of the complete control
+		},
+		
+		onclick: function() {
+			var theEl = $("#"+this.getId()+" .block");
+			if (theEl.attr("class")=="block") {
+				theEl.addClass("rotated")
+			} else {
+				theEl.attr("class","block")
+			}
+			/*
+			if (document.getElementById(this.getId()).className=="block") {
+				document.getElementById(this.getId()).className += " rotated";
+			}
+			else{
+				document.getElementById(this.getId()).className = "block";
+			}
+			*/
+		}
+	});		    
+    
+	
+	//main program starts here
+	
+	//shell
+	mContent = {}; // a map to remember page content once it is created
+	var oShell = new sap.ui.ux3.Shell("myShell", {
+	appTitle:"UI5 Showcase",                 // give a title
+	worksetItems:[                                          // add some items to the top navigation
+		new sap.ui.ux3.NavigationItem({key:"wi_home",text:"Products",subItems:[  // the "Home" workcenter also gets three sub-items
+			new sap.ui.ux3.NavigationItem({key:"wi_home_overview",text:"Overview"}),
+			new sap.ui.ux3.NavigationItem({key:"wi_home_inbox",text:"Recalls"}),
+			new sap.ui.ux3.NavigationItem({key:"wi_home_news",text:"News"})
+		]}),
+		new sap.ui.ux3.NavigationItem({key:"wi_so",text:"Sales Orders"}),
+		new sap.ui.ux3.NavigationItem({key:"wi_analyze",text:"Analyze"}),
+	],
+	paneBarItems:[  // add also one item to the right-side PaneBar
+		new sap.ui.core.Item({key:"pb_people",text:"People"})
+	],
+	logout:function() { // create a handler function and attach it to the "logout" event
+		alert("User wants to log out...");
+	}
+	});
+
+	// also set some content for the side pane
+	oShell.setPaneContent(new sap.ui.commons.Button({text:"This Button is in the Pane"}));
+
+
+	// when the user selects a workset, put the respective content into the shell's main area
+	oShell.attachWorksetItemSelected(
+			selectWorkItem
+	);
+	// set the initial content of the Shell - the Home Overview is selected initially
+	oShell.setContent(getContent("wi_home_overview"));
+	
+	oShell.placeAt("content");
+
+	 function selectWorkItem(oEvent) {
+        var key = oEvent.getParameter("key");
+        var oShell =  oEvent.oSource;
+        oShell.setContent(getContent(key));
+	};  
+	// Page content creation - for each workset the content is defined here 
+	// For demo purposes there is just one button on each page
+
+	function  getContent(key) {
+	    if (mContent[key]) return mContent[key]; // if content is already created, return it directly
+		
+	    if (key == "wi_home_overview") { 
+	        mContent[key] = getTableAndCharts();
+	    } else if (key == "wi_home_inbox") {
+	        mContent[key] = new sap.ui.commons.Button({text:"This Button is the content of the Inbox"});
+	    } else if (key == "wi_home_news") {
+	        mContent[key] = new sap.ui.commons.Button({text:"This Button is the content of the News"});
+	    } else if (key == "wi_so") {
+	        mContent[key] = new sap.ui.commons.Button({text:"This Button is the content of the Sales Orders Workset"});
+	    } else if (key == "wi_analyze") {
+	        mContent[key] = new sap.ui.commons.Button({text:"This Button is the content of the Analyze Workset"});
+	    }
+	    return this.mContent[key];       
+	}	
+	
+	function getTableAndCharts() {
+		//data for the model
+		var oDat = {
+				"ProductCollection": [
+				{
+					"ProductID": "HT-1000",
+					"Price": {"Amount": "50"},
+					"Description": "Asus EEe Transformer"
+				},
+				{
+					"ProductID": "AP-3",
+					"Price": {"Amount": "12"},
+					"Description": "Apple iPad 3"
+				}, 
+				{
+					"ProductID": "AB-2000",
+					"Price": {"Amount": "10"},
+					"Description": "Galaxy Tab"
+				},     
+				{
+					"ProductID": "SO-3000",
+					"Price": {"Amount": "8"},
+					"Description": "Sony Tablet S"
+				}, 
+				{
+					"ProductID": "MO-3000",
+					"Price": {"Amount": "15"},
+					"Description": "Mototola Xoom"
+				},   
+				{
+					"ProductID": "AC-30",
+					"Price": {"Amount": "25"},
+					"Description": "Acer Iconia"
+				},  
+				{
+					"ProductID": "AP-2",
+					"Price": {"Amount": "14"},
+					"Description": "Apple iPad 2"
+				}
+				]
+		};
+		var oModel = new sap.ui.model.json.JSONModel();
+		oModel.setData(oDat);
+
+		//model for slider	    
+		var oModel2 = new sap.ui.model.json.JSONModel();
+		oModel2.setData({
+			itemno: 3
+		});
+		sap.ui.getCore().setModel(oModel2, "myModel");
+
+	   //Layout, which also is the bound parent of all its child controls
+		var ml = new sap.ui.commons.layout.MatrixLayout();
+		ml.setModel(oModel);
+		
+		//table
+		var oTable = new sap.ui.table.Table("oTable", {
+			title: "Products",
+			columns: [
+					new sap.ui.table.Column().setTemplate(
+							new sap.ui.commons.TextView({text:"{ProductID}"})
+					).setLabel(new sap.ui.commons.Label({text: "ID"})),	   
+					new sap.ui.table.Column().setTemplate(
+							new sap.ui.commons.TextView({text:"{Price/Amount}"})
+					).setLabel(new sap.ui.commons.Label({text: "Amount"})),	   						
+					new sap.ui.table.Column().setTemplate(
+							new sap.ui.commons.TextView({text:"{Description}"})
+					).setLabel(new sap.ui.commons.Label({text: "Description"}))	    			          
+			]
+		});
+		oTable.setSelectionMode(sap.ui.table.SelectionMode.Single);
+		oTable.bindRows("/ProductCollection");
+
+		oTable.attachRowSelectionChange(function(oEvent){
+			// get the binding context of the first selected row
+			var oContext = oEvent.getParameter("rowContext");
+			// update binding context of the details
+			var ctrl = sap.ui.getCore().byId("tv");
+			ctrl.bindContext(oContext);	
+		});
+
+		var oRowTemplate = new my.ChartItem({productid:"{ProductID}",amount:"{Price/Amount}"})
+
+		var myPie = new my.Pie({text:"{Description}", size: "100px", maxitems: "{myModel>/itemno}",
+			items: {path : "/ProductCollection", template : oRowTemplate} 	
+		});
+		
+		var myBar = new my.Bar({text:"{Description}", size: "100px", maxitems: "{myModel>/itemno}",
+			items: {path : "/ProductCollection", template : oRowTemplate} 	
+		})
+		
+		//slider
+		oSlider = new sap.ui.commons.Slider({value:"{myModel>/itemno}"});
+		oSlider.setWidth("200px"); 
+		oSlider.setSmallStepWidth(1);
+		oSlider.setMin(1); 
+		oSlider.setMax(oDat.ProductCollection.length); 
+		oSlider.setTotalUnits(oDat.ProductCollection.length-1);
+		oSlider.setStepLabels(true);
+
+
+		//Textview
+		var lab = new sap.ui.commons.Label("la",{text:"Product description:"});
+		var tv = new sap.ui.commons.TextView("tv",{text:"{Description}"}).bindContext("/ProductCollection/1");
+
+		//Bind field
+		ml.createRow(oTable).createRow(lab).createRow(tv)
+		.createRow(
+				new my.FlipContainer({content: [
+											   myPie,
+												myBar
+												]
+				})
+		)
+		.createRow(oSlider);
+
+		return ml;
+	}	
+</script>
+
+</head>
+<body class='sapUiBody'>
+    <div id='content'></div>
+</body>
+</html>
